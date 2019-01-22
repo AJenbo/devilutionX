@@ -6,11 +6,11 @@
 
 char chr_name_str[16];
 
-int menu = SPLASH;
-int SelectedItem = 0;
+int SelectedItem = 1;
 int SelectedItemMax = 0;
 int MenuItem[11] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 int PreviousItem[11] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+int submenu = 0;
 
 void __cdecl UiDestroy()
 {
@@ -20,8 +20,17 @@ void __cdecl UiDestroy()
 
 BOOL __stdcall UiTitleDialog(int a1)
 {
-	DUMMY();
-	return TRUE;
+	SDL_Event event;
+	while (1) {
+		PaletteFadeIn(32);
+		RenderDiabloSplashPage();
+		if (SDL_PollEvent(&event) && event.type == SDL_KEYDOWN) {
+			TitleImageLoaded = false;
+			return TRUE;
+		}
+	}
+
+	return FALSE;
 }
 
 void LoadCharNamesintoMemory()
@@ -46,11 +55,6 @@ void LoadCharNamesintoMemory()
 		p_hero_names += 32;
 	}
 
-	for (int i = 0; i < MAX_CHARACTERS; i++) {
-		strcpy(p_hero_names, "32as1d");
-		p_hero_names += 32;
-	}
-
 	// memcpy(shero_names, hero_names, sizeof(hero_names));
 }
 
@@ -63,7 +67,7 @@ void SetMenu(int MenuId)
 	mem_free_dbg(tmp);
 	TitleImageLoaded = false;
 
-	menu = MenuId;
+	submenu = MenuId;
 	SelectedItem = 1;
 	SelectedItemMax = MenuItem[MenuId];
 }
@@ -96,7 +100,6 @@ void InitHiracy()
 	MenuItem[MULTIPLAYER_DIFFICULTY] = 3;
 	MenuItem[MULTIPLAYER_BNET_GATEWAYS] = 3;
 
-	PreviousItem[SPLASH] = MAINMENU;
 	PreviousItem[SINGLEPLAYER_LOAD] = MAINMENU;
 	PreviousItem[SINGLEPLAYER_CLASSES] = SINGLEPLAYER_LOAD;
 	PreviousItem[SINGLEPLAYER_NAME] = SINGLEPLAYER_CLASSES;
@@ -120,7 +123,6 @@ void LoadUiGFX()
 	gdwCursorWidth = dwData[0];
 	gdwCursorHeight = dwData[1];
 
-	printf("logo\n");
 	LoadArtImage("ui_art\\logo.pcx", &pPcxLogoImage, 15, dwData);
 	gdwLogoWidth = dwData[0];
 	gdwLogoHeight = dwData[1];
@@ -157,458 +159,444 @@ void LoadUiGFX()
 	gdwFont42Height = dwData[1];
 }
 
+BOOL timestart = 0;
+int NewHeroNameIndex = 0;
 void UiInitialize()
 {
 	printf("UiInitialize");
-	//SDL_SetRelativeMouseMode(SDL_TRUE);
-	// WNDPROC saveProc;
-
 	InitHiracy();
 	LoadUiGFX();
 	snd_init(0);
 	music_start(5);
 
-	int timestart = 0;
-
-	signed int NewHeroNameIndex = 0;
-
-	SelectedItemMax = MenuItem[menu];
-	SDL_Event event;
-	int x, y;
-	bool quit = false;
-
-	printf("Main Menu Init\n");
 	if (!window) {
 		SdlDiabloMainWindow();
 	}
 
 	ClearScreenBuffer();
 
-	const Uint8 *state = SDL_GetKeyboardState(NULL);
-
-	// static std::deque<MSG> message_queue;
 	LoadHeroStats();
 	LoadCharNamesintoMemory();
+}
 
-	while (!quit) {
-		PaletteFadeIn(32);
+BOOL __stdcall UiMainMenuDialog(char *name, int *menu, void(__stdcall *fnSound)(char *file), int a4)
+{
+	//PaletteFadeIn(32);
+	SelectedItemMax = MenuItem[submenu];
+	SDL_Event event;
+	int x, y;
 
-		switch (menu) {
-		case SPLASH:
-			RenderDiabloSplashPage();
-			break;
-		case MAINMENU:
-			RenderDiabloMainPage();
-			DrawMouse();
-			break;
-		case SINGLEPLAYER_LOAD:
-			RenderDiabloSinglePlayerPage();
-			gbMaxPlayers = 1;
-			DrawMouse();
-			break;
-		case SINGLEPLAYER_CLASSES:
-			CreateHeroMenu();
-			DrawMouse();
-			break;
-		case SINGLEPLAYER_NAME:
-			RenderUndecidedHeroName(HeroChosen);
-			DrawMouse();
-			break;
-		case MULTIPLAYER_LOBBY:
-			DrawPreGameOptions(1);
-			RenderDefaultStats(HeroChosen);
-			DrawMouse();
-			break;
-		case MULTIPLAYER_DIFFICULTY:
-			DrawPreGameDifficultySelection(HeroChosen, 1);
-			RenderDefaultStats(HeroChosen);
-			DrawMouse();
-			break;
-		case CREDIT:
-			ShowCredts();
-			break;
-		}
+	switch (submenu) {
+	case MAINMENU:
+		RenderDiabloMainPage();
+		DrawMouse();
+		break;
+	case SINGLEPLAYER_LOAD:
+		RenderDiabloSinglePlayerPage();
+		gbMaxPlayers = 1;
+		DrawMouse();
+		break;
+	case SINGLEPLAYER_CLASSES:
+		CreateHeroMenu();
+		DrawMouse();
+		break;
+	case SINGLEPLAYER_NAME:
+		RenderUndecidedHeroName(HeroChosen);
+		DrawMouse();
+		break;
+	case MULTIPLAYER_LOBBY:
+		DrawPreGameOptions(1);
+		RenderDefaultStats(HeroChosen);
+		DrawMouse();
+		break;
+	case MULTIPLAYER_DIFFICULTY:
+		DrawPreGameDifficultySelection(HeroChosen, 1);
+		RenderDefaultStats(HeroChosen);
+		DrawMouse();
+		break;
+	case CREDIT:
+		ShowCredts();
+		break;
+	}
 
-		if (SDL_PollEvent(&event)) {
-			switch (event.type) {
-			case SDL_KEYDOWN:
-				switch (event.key.keysym.sym) {
-				case SDLK_ESCAPE:
-					if (PreviousItem[menu]) {
-						SetMenu(PreviousItem[menu]);
-						break;
-					}
-					quit = true;
-					ExitDiablo();
-					break;
-
-				case SDLK_BACKSPACE:
-					if (NewHeroNameIndex > 0) {
-						HeroUndecidedName[NewHeroNameIndex - 1] = 0;
-						NewHeroNameIndex--;
-					}
-					break;
-
-				case SDLK_UP:
-					SelectedItem--;
-					if (SelectedItem < 1) {
-						SelectedItem = SelectedItemMax ? SelectedItemMax : 1;
-					}
-					effects_play_sound("sfx\\items\\titlemov.wav");
-					break;
-
-				case SDLK_DOWN:
-					SelectedItem++;
-					if (SelectedItem > SelectedItemMax) {
-						SelectedItem = 1;
-					}
-					effects_play_sound("sfx\\items\\titlemov.wav");
-					break;
-
-				case SDLK_RETURN:
-					switch (menu) {
-					case MAINMENU:
-						switch (SelectedItem) {
-						case MAINMENU_SINGLE_PLAYER:
-							SetMenu(SINGLEPLAYER_LOAD); // TODO skip to choose class if no valid saves
-							break;
-						case MAINMENU_MULTIPLAYER:
-							printf("Multi Player\n");
-							break;
-						case MAINMENU_REPLAY_INTRO:
-							printf("Replay Intro\n");
-							break;
-						case MAINMENU_SHOW_CREDITS:
-							SetMenu(CREDIT);
-							break;
-						case MAINMENU_EXIT_DIABLO:
-							quit = true;
-							ExitDiablo();
-							break;
-						}
-						break;
-					case SINGLEPLAYER_LOAD:
-						if (1 || SelectedItem == SelectedItemMax) { // TODO skip to choose class if no valid saves
-							SetMenu(SINGLEPLAYER_CLASSES);
-						}
-						break;
-					case SINGLEPLAYER_CLASSES:
-						HeroChosen = SelectedItem - 1;
-						SetMenu(SINGLEPLAYER_NAME);
-						break;
-					case SINGLEPLAYER_NAME:
-						CreateSinglePlayerChar = 1;
-						const char *test_name = HeroUndecidedName;
-						quit = true;
-						break;
-					}
-					break;
-
-				default:
-					char letter = event.key.keysym.sym;
-					if (int(letter) > 96 && int(letter) < 123 || int(letter) == 32)
-
-						if (NewHeroNameIndex < 17) {
-							HeroUndecidedName[NewHeroNameIndex] = letter;
-							NewHeroNameIndex++;
-						}
-
+	if (SDL_PollEvent(&event)) {
+		switch (event.type) {
+		case SDL_KEYDOWN:
+			switch (event.key.keysym.sym) {
+			case SDLK_ESCAPE:
+				if (PreviousItem[submenu]) {
+					SetMenu(PreviousItem[submenu]);
 					break;
 				}
+				ExitDiablo();
+				break;
 
-			case SDL_KEYUP:
+			case SDLK_BACKSPACE:
+				if (NewHeroNameIndex > 0) {
+					HeroUndecidedName[NewHeroNameIndex - 1] = 0;
+					NewHeroNameIndex--;
+				}
+				break;
+
+			case SDLK_UP:
+				SelectedItem--;
+				if (SelectedItem < 1) {
+					SelectedItem = SelectedItemMax ? SelectedItemMax : 1;
+				}
+				fnSound("sfx\\items\\titlemov.wav");
+				break;
+
+			case SDLK_DOWN:
+				SelectedItem++;
+				if (SelectedItem > SelectedItemMax) {
+					SelectedItem = 1;
+				}
+				fnSound("sfx\\items\\titlemov.wav");
+				break;
+
+			case SDLK_RETURN:
+				switch (submenu) {
+				case MAINMENU:
+					switch (SelectedItem) {
+					case MAINMENU_SINGLE_PLAYER:
+						SetMenu(SINGLEPLAYER_LOAD); // TODO skip to choose class if no valid saves
+						break;
+					case MAINMENU_MULTIPLAYER:
+						printf("Multi Player\n");
+						break;
+					case MAINMENU_REPLAY_INTRO:
+						printf("Replay Intro\n");
+						break;
+					case MAINMENU_SHOW_CREDITS:
+						SetMenu(CREDIT);
+						break;
+					case MAINMENU_EXIT_DIABLO:
+						ExitDiablo();
+						return MAINMENU_EXIT_DIABLO;
+					}
+					break;
+				case SINGLEPLAYER_LOAD:
+					if (1 || SelectedItem == SelectedItemMax) { // TODO skip to choose class if no valid saves
+						SetMenu(SINGLEPLAYER_CLASSES);
+					}
+					break;
+				case SINGLEPLAYER_CLASSES:
+					HeroChosen = SelectedItem - 1;
+					SetMenu(SINGLEPLAYER_NAME);
+					break;
+				case SINGLEPLAYER_NAME:
+					CreateSinglePlayerChar = 1;
+					const char *test_name = HeroUndecidedName;
+					break;
+				}
+				break;
+
+			default:
+				char letter = event.key.keysym.sym;
+				if (int(letter) > 96 && int(letter) < 123 || int(letter) == 32)
+
+					if (NewHeroNameIndex < 17) {
+						HeroUndecidedName[NewHeroNameIndex] = letter;
+						NewHeroNameIndex++;
+					}
+
 				break;
 			}
 
-			if (event.type == SDL_QUIT) {
-				quit = true;
-				ExitDiablo();
-			}
+		case SDL_KEYUP:
+			break;
+		}
 
-			if (event.type == SDL_MOUSEMOTION) {
-				// Get the mouse offsets
-				MouseX = event.motion.x;
-				MouseY = event.motion.y;
-			}
+		if (event.type == SDL_QUIT) {
+			ExitDiablo();
+			return MAINMENU_EXIT_DIABLO;
+		}
 
-			// If a key was pressed
-			if (event.type == SDL_MOUSEBUTTONDOWN /*&& event.button.clicks == 2*/) {
+		if (event.type == SDL_MOUSEMOTION) {
+			// Get the mouse offsets
+			MouseX = event.motion.x;
+			MouseY = event.motion.y;
+		}
 
-				if (event.button.button == SDL_BUTTON_LEFT) {
-					x = event.button.x;
-					y = event.button.y;
-					printf("X %d , Y %d\n", x, y);
+		// If a key was pressed
+		if (event.type == SDL_MOUSEBUTTONDOWN /*&& event.button.clicks == 2*/) {
 
-					int ItemLeft;
-					int ItemTop;
-					int ItemHeight;
-					int ItemWidth;
+			if (event.button.button == SDL_BUTTON_LEFT) {
+				x = event.button.x;
+				y = event.button.y;
+				printf("X %d , Y %d\n", x, y);
 
-					int CreateHeroOkBoxX = 330;
-					int CreateHeroOkBoxY = 441;
-					int CreateHeroCanBBoxX = 445;
-					int CreateHeroCanBBoxY = 473;
+				int ItemLeft;
+				int ItemTop;
+				int ItemHeight;
+				int ItemWidth;
 
-					SDL_Rect CreateHeroCancelBox;
-					CreateHeroCancelBox.y = 550;
-					CreateHeroCancelBox.x = 675;
-					CreateHeroCancelBox.w = 100;
-					CreateHeroCancelBox.h = 30;
+				int CreateHeroOkBoxX = 330;
+				int CreateHeroOkBoxY = 441;
+				int CreateHeroCanBBoxX = 445;
+				int CreateHeroCanBBoxY = 473;
 
-					clock_t start, end;
-					double cpu_time_used;
+				SDL_Rect CreateHeroCancelBox;
+				CreateHeroCancelBox.y = 550;
+				CreateHeroCancelBox.x = 675;
+				CreateHeroCancelBox.w = 100;
+				CreateHeroCancelBox.h = 30;
 
-					switch (menu) {
-					case MAINMENU:
-						ItemTop = 191;
-						ItemHeight = 42;
-						ItemWidth = 515;
-						ItemLeft = GetCenterOffset(ItemWidth);
-						if (IsInside(x, y, ItemLeft, ItemTop, ItemWidth, ItemHeight)) {
-							SetMenu(SINGLEPLAYER_LOAD); // TODO skip to choose class if no valid saves
-						} else if (IsInside(x, y, ItemLeft, ItemTop + ItemHeight + 1, ItemWidth, ItemHeight)) {
-							printf("Multi Player\n");
-						} else if (IsInside(x, y, ItemLeft, ItemTop + ItemHeight * 2 + 1, ItemWidth, ItemHeight)) {
-							printf("Replay Intro\n");
-						} else if (IsInside(x, y, ItemLeft, ItemTop + ItemHeight * 3 + 2, ItemWidth, ItemHeight)) {
-							SetMenu(CREDIT);
-						} else if (IsInside(x, y, ItemLeft, ItemTop + ItemHeight * 4 + 3, ItemWidth, ItemHeight)) {
-							quit = true;
-							ExitDiablo();
-						}
-						break;
-					case SINGLEPLAYER_LOAD:
-						ItemLeft = 440;
-						ItemTop = 315;
-						ItemHeight = 30;
-						ItemWidth = 400;
+				clock_t start, end;
+				double cpu_time_used;
 
-						int CreateHeroY = 555;
-						int CreateHeroX = 305;
+				switch (submenu) {
+				case MAINMENU:
+					ItemTop = 191;
+					ItemHeight = 42;
+					ItemWidth = 515;
+					ItemLeft = GetCenterOffset(ItemWidth);
+					if (IsInside(x, y, ItemLeft, ItemTop, ItemWidth, ItemHeight)) {
+						SetMenu(SINGLEPLAYER_LOAD); // TODO skip to choose class if no valid saves
+					} else if (IsInside(x, y, ItemLeft, ItemTop + ItemHeight + 1, ItemWidth, ItemHeight)) {
+						printf("Multi Player\n");
+					} else if (IsInside(x, y, ItemLeft, ItemTop + ItemHeight * 2 + 1, ItemWidth, ItemHeight)) {
+						printf("Replay Intro\n");
+					} else if (IsInside(x, y, ItemLeft, ItemTop + ItemHeight * 3 + 2, ItemWidth, ItemHeight)) {
+						SetMenu(CREDIT);
+					} else if (IsInside(x, y, ItemLeft, ItemTop + ItemHeight * 4 + 3, ItemWidth, ItemHeight)) {
+						ExitDiablo();
+						return MAINMENU_EXIT_DIABLO;
+					}
+					break;
+				case SINGLEPLAYER_LOAD:
+					ItemLeft = 440;
+					ItemTop = 315;
+					ItemHeight = 30;
+					ItemWidth = 400;
 
-						// Render Clicks
-						if (TotalPlayers >= 1 && IsInside(x, y, ItemLeft, ItemTop, ItemWidth, ItemHeight)) {
-							strcpy(chr_name_str, hero_names[0]);
-							printf("Player %s\n", chr_name_str);
-							SetMenu(MULTIPLAYER_LOBBY);
-							// break;
-						} else if (TotalPlayers >= 2 && IsInside(x, y, ItemLeft, ItemTop + ItemHeight, ItemWidth, ItemHeight)) {
-							printf("Player 2 Diablo\n");
-							strcpy(chr_name_str, hero_names[1]);
-							printf("Player %s\n", chr_name_str);
-							SetMenu(MULTIPLAYER_LOBBY);
-							//	break;
-						} else if (TotalPlayers >= 3 && IsInside(x, y, ItemLeft, ItemTop + ItemHeight * 2, ItemWidth, ItemHeight)) {
-							printf("Player 3 Diablo\n");
-							strcpy(chr_name_str, hero_names[2]);
-							printf("Player %s\n", chr_name_str);
-							SetMenu(MULTIPLAYER_LOBBY);
-							//	break;
-						} else if (TotalPlayers >= 4 && IsInside(x, y, ItemLeft, ItemTop + ItemHeight * 3, ItemWidth, ItemHeight)) {
-							printf("Player 4 Diablo\n");
-							strcpy(chr_name_str, hero_names[3]);
-							printf("Player %s\n", chr_name_str);
-							SetMenu(MULTIPLAYER_LOBBY);
-							//	break;
-						} else if (TotalPlayers >= 5 && IsInside(x, y, ItemLeft, ItemTop + ItemHeight * 4, ItemWidth, ItemHeight)) {
-							printf("Player 5 Diablo\n");
-							strcpy(chr_name_str, hero_names[4]);
-							printf("Player %s\n", chr_name_str);
-							SetMenu(MULTIPLAYER_LOBBY);
-							//	break;
-						} else if (TotalPlayers >= 6 && IsInside(x, y, ItemLeft, ItemTop + ItemHeight * 5, ItemWidth, ItemHeight)) {
-							printf("Player 6 Diablo\n");
-							strcpy(chr_name_str, hero_names[5]);
-							printf("Player %s\n", chr_name_str);
-							SetMenu(MULTIPLAYER_LOBBY);
-							//	break;
-						} else if (TotalPlayers >= 6 && IsInsideRect(x, y, CreateHeroCancelBox)) {
-							printf("Cancel\n\n\n");
-							SetMenu(MAINMENU);
-						} else if (TotalPlayers >= 6 && IsInside(x, y, CreateHeroX + ItemWidth, CreateHeroY, ItemWidth, ItemHeight)) {
-							printf("Clicked Create Hero Box\n");
-							SetMenu(SINGLEPLAYER_CLASSES);
-						}
-						break;
-					case SINGLEPLAYER_CLASSES:
-						printf("\n\nmenu3 X%d Y%d \n ", x, y);
+					int CreateHeroY = 555;
+					int CreateHeroX = 305;
 
-						int WarriorSelectBoxY = 430;
-						int WarriorSelectBoxW = 100;
-						int WarriorSelectBoxS = 100;
+					// Render Clicks
+					if (TotalPlayers >= 1 && IsInside(x, y, ItemLeft, ItemTop, ItemWidth, ItemHeight)) {
+						strcpy(chr_name_str, hero_names[0]);
+						printf("Player %s\n", chr_name_str);
+						SetMenu(MULTIPLAYER_LOBBY);
+						// break;
+					} else if (TotalPlayers >= 2 && IsInside(x, y, ItemLeft, ItemTop + ItemHeight, ItemWidth, ItemHeight)) {
+						printf("Player 2 Diablo\n");
+						strcpy(chr_name_str, hero_names[1]);
+						printf("Player %s\n", chr_name_str);
+						SetMenu(MULTIPLAYER_LOBBY);
+						//	break;
+					} else if (TotalPlayers >= 3 && IsInside(x, y, ItemLeft, ItemTop + ItemHeight * 2, ItemWidth, ItemHeight)) {
+						printf("Player 3 Diablo\n");
+						strcpy(chr_name_str, hero_names[2]);
+						printf("Player %s\n", chr_name_str);
+						SetMenu(MULTIPLAYER_LOBBY);
+						//	break;
+					} else if (TotalPlayers >= 4 && IsInside(x, y, ItemLeft, ItemTop + ItemHeight * 3, ItemWidth, ItemHeight)) {
+						printf("Player 4 Diablo\n");
+						strcpy(chr_name_str, hero_names[3]);
+						printf("Player %s\n", chr_name_str);
+						SetMenu(MULTIPLAYER_LOBBY);
+						//	break;
+					} else if (TotalPlayers >= 5 && IsInside(x, y, ItemLeft, ItemTop + ItemHeight * 4, ItemWidth, ItemHeight)) {
+						printf("Player 5 Diablo\n");
+						strcpy(chr_name_str, hero_names[4]);
+						printf("Player %s\n", chr_name_str);
+						SetMenu(MULTIPLAYER_LOBBY);
+						//	break;
+					} else if (TotalPlayers >= 6 && IsInside(x, y, ItemLeft, ItemTop + ItemHeight * 5, ItemWidth, ItemHeight)) {
+						printf("Player 6 Diablo\n");
+						strcpy(chr_name_str, hero_names[5]);
+						printf("Player %s\n", chr_name_str);
+						SetMenu(MULTIPLAYER_LOBBY);
+						//	break;
+					} else if (TotalPlayers >= 6 && IsInsideRect(x, y, CreateHeroCancelBox)) {
+						printf("Cancel\n\n\n");
+						SetMenu(MAINMENU);
+					} else if (TotalPlayers >= 6 && IsInside(x, y, CreateHeroX + ItemWidth, CreateHeroY, ItemWidth, ItemHeight)) {
+						printf("Clicked Create Hero Box\n");
+						SetMenu(SINGLEPLAYER_CLASSES);
+					}
+					break;
+				case SINGLEPLAYER_CLASSES:
+					printf("\n\nmenu3 X%d Y%d \n ", x, y);
 
-						int RogueSelectBoxX = 450;
-						int RogueSelectBoxY = 392;
-						int SorcerorSelectBoxX = 383;
-						int SorcerorSelectBoxY = 365;
+					int WarriorSelectBoxY = 430;
+					int WarriorSelectBoxW = 100;
+					int WarriorSelectBoxS = 100;
 
-						SDL_Rect WarriorSelectBox;
-						WarriorSelectBox.y = 350;
-						WarriorSelectBox.x = 280;
-						WarriorSelectBox.w = 100;
-						WarriorSelectBox.h = 30;
+					int RogueSelectBoxX = 450;
+					int RogueSelectBoxY = 392;
+					int SorcerorSelectBoxX = 383;
+					int SorcerorSelectBoxY = 365;
 
-						SDL_Rect RogueSelectBox;
-						RogueSelectBox.y = 392;
-						RogueSelectBox.x = 280;
-						RogueSelectBox.w = 100;
-						RogueSelectBox.h = 30;
+					SDL_Rect WarriorSelectBox;
+					WarriorSelectBox.y = 350;
+					WarriorSelectBox.x = 280;
+					WarriorSelectBox.w = 100;
+					WarriorSelectBox.h = 30;
 
-						SDL_Rect SorcerorSelectBox;
-						SorcerorSelectBox.y = 428;
-						SorcerorSelectBox.x = 280;
-						SorcerorSelectBox.w = 100;
-						SorcerorSelectBox.h = 30;
+					SDL_Rect RogueSelectBox;
+					RogueSelectBox.y = 392;
+					RogueSelectBox.x = 280;
+					RogueSelectBox.w = 100;
+					RogueSelectBox.h = 30;
 
-						if (IsInsideRect(x, y, WarriorSelectBox)) {
-							printf(" warrior I was hit\n\n\n");
-							HeroChosen = 0;
-							SetMenu(SINGLEPLAYER_NAME);
-						} else if (IsInsideRect(x, y, RogueSelectBox)) {
-							printf(" rogue I was hit\n\n\n");
-							HeroChosen = 1;
-							SetMenu(SINGLEPLAYER_NAME);
-						} else if (IsInsideRect(x, y, SorcerorSelectBox)) {
-							printf("sorceror I was hit\n\n\n");
-							HeroChosen = 2;
-							SetMenu(SINGLEPLAYER_NAME);
-						} else if (IsInsideRect(x, y, CreateHeroCancelBox)) {
-							printf("Cancel\n\n\n");
-							SetMenu(SINGLEPLAYER_CLASSES);
-						}
-						break;
-					case SINGLEPLAYER_NAME:
-						printf("Create hero");
+					SDL_Rect SorcerorSelectBox;
+					SorcerorSelectBox.y = 428;
+					SorcerorSelectBox.x = 280;
+					SorcerorSelectBox.w = 100;
+					SorcerorSelectBox.h = 30;
 
-						SDL_Rect ClickOkBox;
-						ClickOkBox.x = 324;
-						ClickOkBox.y = 430;
-						ClickOkBox.w = 48;
-						ClickOkBox.h = 30;
+					if (IsInsideRect(x, y, WarriorSelectBox)) {
+						printf(" warrior I was hit\n\n\n");
+						HeroChosen = 0;
+						SetMenu(SINGLEPLAYER_NAME);
+					} else if (IsInsideRect(x, y, RogueSelectBox)) {
+						printf(" rogue I was hit\n\n\n");
+						HeroChosen = 1;
+						SetMenu(SINGLEPLAYER_NAME);
+					} else if (IsInsideRect(x, y, SorcerorSelectBox)) {
+						printf("sorceror I was hit\n\n\n");
+						HeroChosen = 2;
+						SetMenu(SINGLEPLAYER_NAME);
+					} else if (IsInsideRect(x, y, CreateHeroCancelBox)) {
+						printf("Cancel\n\n\n");
+						SetMenu(SINGLEPLAYER_CLASSES);
+					}
+					break;
+				case SINGLEPLAYER_NAME:
+					printf("Create hero");
 
-						if (IsInsideRect(x, y, CreateHeroCancelBox)) {
-							memset(HeroUndecidedName, 0, 17);
+					SDL_Rect ClickOkBox;
+					ClickOkBox.x = 324;
+					ClickOkBox.y = 430;
+					ClickOkBox.w = 48;
+					ClickOkBox.h = 30;
 
-							NewHeroNameIndex = 0;
+					if (IsInsideRect(x, y, CreateHeroCancelBox)) {
+						memset(HeroUndecidedName, 0, 17);
 
-							printf("Cancel\n\n\n");
-							SetMenu(SINGLEPLAYER_CLASSES);
-						} else if (IsInsideRect(x, y, ClickOkBox)) {
-							printf("Ok\n");
-							CreateSinglePlayerChar = 1;
-							const char *test_name = HeroUndecidedName;
-							printf("%s\n", test_name);
-							break;
-						}
-						break;
-					case 5:
-						if (timestart == 0) {
-							start = clock();
-							timestart = 1;
-						}
+						NewHeroNameIndex = 0;
 
-						end = clock();
-
-						cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
-
-						printf("TIEM DELAY %f\n", cpu_time_used);
-
-						SDL_Rect NewGameBox;
-						NewGameBox.y = 350;
-						NewGameBox.x = 280;
-						NewGameBox.w = 300;
-						NewGameBox.h = 30;
-
-						SDL_Rect LoadGameBox;
-						LoadGameBox.y = 392;
-						LoadGameBox.x = 280;
-						LoadGameBox.w = 300;
-						LoadGameBox.h = 30;
-						// X450 Y 392 ;
-						// X 447 Y 428
-
-						if (cpu_time_used > 0.5 && IsInsideRect(x, y, NewGameBox)) {
-							printf(" New Game I was hit\n\n\n");
-							SetMenu(MULTIPLAYER_DIFFICULTY);
-							cpu_time_used = 0;
-							timestart = 0;
-							start = 0;
-						} else if (cpu_time_used > 0.5 && IsInsideRect(x, y, LoadGameBox)) {
-
-							printf(" Load Game I was hit\n\n\n");
-							break;
-						} else if (IsInsideRect(x, y, CreateHeroCancelBox)) {
-							timestart = 0;
-							cpu_time_used = 0;
-							start = 0;
-							end = 0;
-							cpu_time_used = 0;
-
-							printf("Cancel\n\n\n");
-
-							SetMenu(SINGLEPLAYER_CLASSES); // TODO skip to main menu if no valid saves
-						}
-						break;
-					case MULTIPLAYER_DIFFICULTY:
-						if (timestart == 0) {
-							start = clock();
-							timestart = 1;
-						}
-
-						end = clock();
-						cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
-
-						// int x = 280;
-						// int y = 430;
-
-						SDL_Rect NormalSelectBox;
-						NormalSelectBox.y = 350;
-						NormalSelectBox.x = 280;
-						NormalSelectBox.w = 300;
-						NormalSelectBox.h = 30;
-
-						SDL_Rect NightmareSelectBox;
-						NightmareSelectBox.y = 392;
-						NightmareSelectBox.x = 280;
-						NightmareSelectBox.w = 300;
-						NightmareSelectBox.h = 30;
-						// X450 Y 392 ;
-
-						SDL_Rect HellSelectBox;
-						HellSelectBox.y = 428;
-						HellSelectBox.x = 280;
-						HellSelectBox.w = 300;
-						HellSelectBox.h = 30;
-						// X 447 Y 428
-
-						if (cpu_time_used > 0.5 && IsInsideRect(x, y, NormalSelectBox)) {
-							StartNewGame = 1;
-							gnDifficulty = DIFF_NORMAL;
-							break;
-						} else if (cpu_time_used > 0.5 && IsInsideRect(x, y, NightmareSelectBox)) {
-							StartNewGame = 1;
-							gnDifficulty = DIFF_NIGHTMARE;
-							break;
-						} else if (cpu_time_used > 1 && IsInsideRect(x, y, HellSelectBox)) {
-							gnDifficulty = DIFF_HELL;
-							StartNewGame = 1;
-							break;
-						} else if (IsInsideRect(x, y, CreateHeroCancelBox)) {
-							timestart = 0;
-							cpu_time_used = 0;
-							start = 0;
-							end = 0;
-							cpu_time_used = 0;
-
-							printf("Cancel\n\n\n");
-							SetMenu(MULTIPLAYER_LOBBY);
-						}
+						printf("Cancel\n\n\n");
+						SetMenu(SINGLEPLAYER_CLASSES);
+					} else if (IsInsideRect(x, y, ClickOkBox)) {
+						printf("Ok\n");
+						CreateSinglePlayerChar = 1;
+						const char *test_name = HeroUndecidedName;
+						printf("%s\n", test_name);
 						break;
 					}
+					break;
+				case 5:
+					if (timestart == 0) {
+						start = clock();
+						timestart = 1;
+					}
+
+					end = clock();
+
+					cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
+
+					printf("TIEM DELAY %f\n", cpu_time_used);
+
+					SDL_Rect NewGameBox;
+					NewGameBox.y = 350;
+					NewGameBox.x = 280;
+					NewGameBox.w = 300;
+					NewGameBox.h = 30;
+
+					SDL_Rect LoadGameBox;
+					LoadGameBox.y = 392;
+					LoadGameBox.x = 280;
+					LoadGameBox.w = 300;
+					LoadGameBox.h = 30;
+					// X450 Y 392 ;
+					// X 447 Y 428
+
+					if (cpu_time_used > 0.5 && IsInsideRect(x, y, NewGameBox)) {
+						printf(" New Game I was hit\n\n\n");
+						SetMenu(MULTIPLAYER_DIFFICULTY);
+						cpu_time_used = 0;
+						timestart = 0;
+						start = 0;
+					} else if (cpu_time_used > 0.5 && IsInsideRect(x, y, LoadGameBox)) {
+
+						printf(" Load Game I was hit\n\n\n");
+						break;
+					} else if (IsInsideRect(x, y, CreateHeroCancelBox)) {
+						timestart = 0;
+						cpu_time_used = 0;
+						start = 0;
+						end = 0;
+						cpu_time_used = 0;
+
+						printf("Cancel\n\n\n");
+
+						SetMenu(SINGLEPLAYER_CLASSES); // TODO skip to main menu if no valid saves
+					}
+					break;
+				case MULTIPLAYER_DIFFICULTY:
+					if (timestart == 0) {
+						start = clock();
+						timestart = 1;
+					}
+
+					end = clock();
+					cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
+
+					// int x = 280;
+					// int y = 430;
+
+					SDL_Rect NormalSelectBox;
+					NormalSelectBox.y = 350;
+					NormalSelectBox.x = 280;
+					NormalSelectBox.w = 300;
+					NormalSelectBox.h = 30;
+
+					SDL_Rect NightmareSelectBox;
+					NightmareSelectBox.y = 392;
+					NightmareSelectBox.x = 280;
+					NightmareSelectBox.w = 300;
+					NightmareSelectBox.h = 30;
+					// X450 Y 392 ;
+
+					SDL_Rect HellSelectBox;
+					HellSelectBox.y = 428;
+					HellSelectBox.x = 280;
+					HellSelectBox.w = 300;
+					HellSelectBox.h = 30;
+					// X 447 Y 428
+
+					if (cpu_time_used > 0.5 && IsInsideRect(x, y, NormalSelectBox)) {
+						StartNewGame = 1;
+						gnDifficulty = DIFF_NORMAL;
+						break;
+					} else if (cpu_time_used > 0.5 && IsInsideRect(x, y, NightmareSelectBox)) {
+						StartNewGame = 1;
+						gnDifficulty = DIFF_NIGHTMARE;
+						break;
+					} else if (cpu_time_used > 1 && IsInsideRect(x, y, HellSelectBox)) {
+						gnDifficulty = DIFF_HELL;
+						StartNewGame = 1;
+						break;
+					} else if (IsInsideRect(x, y, CreateHeroCancelBox)) {
+						timestart = 0;
+						cpu_time_used = 0;
+						start = 0;
+						end = 0;
+						cpu_time_used = 0;
+
+						printf("Cancel\n\n\n");
+						SetMenu(MULTIPLAYER_LOBBY);
+					}
+					break;
 				}
 			}
 		}
 	}
+
+	return TRUE;
 }
 
 static std::vector<_uiheroinfo> hero_infos;
@@ -667,14 +655,6 @@ BOOL __stdcall UiSelHeroSingDialog(BOOL(__stdcall *fninfo)(BOOL(__stdcall *fninf
 		}
 	}
 
-	return TRUE;
-}
-
-BOOL __stdcall UiMainMenuDialog(char *name, int *pdwResult, void(__stdcall *fnSound)(char *file), int a4)
-{
-	DUMMY();
-	// Pretend we selected Single Player from the main menu
-	*pdwResult = MAINMENU_SINGLE_PLAYER;
 	return TRUE;
 }
 
