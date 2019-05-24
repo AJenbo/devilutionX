@@ -213,6 +213,8 @@ HRESULT StubSurface::Unlock(LPVOID lpSurfaceData)
 		return DVL_S_OK;
 	}
 
+	hatRender();
+
 	if (renderer) {
 		if (SDL_UpdateTexture(texture, NULL, surface->pixels, surface->pitch) != 0) { //pitch is 2560
 			SDL_Log("SDL_UpdateTexture: %s\n", SDL_GetError());
