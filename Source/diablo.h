@@ -89,6 +89,23 @@
 //}
 //#endif
 
+#define CLR_BW0 COLOR_PAIR(1)
+#define CLR_BW1 COLOR_PAIR(2) | A_DIM
+#define CLR_BW2 COLOR_PAIR(2)
+#define CLR_BW3 COLOR_PAIR(2) | A_BOLD
+#define CLR_BW4 COLOR_PAIR(3) | A_DIM
+#define CLR_BW5 COLOR_PAIR(3)
+#define CLR_BW6 COLOR_PAIR(3) | A_BOLD
+
+#define CLR_YEL COLOR_PAIR(4)
+#define CLR_FLS COLOR_PAIR(5)
+
+#define CLR_RED COLOR_PAIR(6)
+#define CLR_GRN COLOR_PAIR(7)
+#define CLR_BLU COLOR_PAIR(8)
+
+#define CLR_BN1 COLOR_PAIR(9)
+
 extern HWND ghMainWnd;
 extern int glMid1Seed[NUMLEVELS];
 extern int glMid2Seed[NUMLEVELS];

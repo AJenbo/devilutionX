@@ -2,6 +2,7 @@
 #include "../3rdParty/Storm/Source/storm.h"
 #include "miniwin/ddraw.h"
 #include <SDL.h>
+#include <ncurses.h>
 
 namespace dvl {
 
@@ -224,6 +225,8 @@ void RenderPresent()
 		LimitFrameRate();
 		return;
 	}
+
+	refresh();
 
 #ifndef USE_SDL1
 	if (renderer) {

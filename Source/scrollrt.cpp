@@ -1,4 +1,5 @@
 #include "diablo.h"
+#include <ncurses.h>
 
 DEVILUTION_BEGIN_NAMESPACE
 
@@ -626,7 +627,7 @@ static void scrollrt_draw_dungeon(int sx, int sy, int dx, int dy, int eflag)
 	bArch = dArch[sx][sy];
 	bMap = dTransVal[sx][sy];
 
-	negMon = dMonster[sx][sy - 1];
+	negMon = sy >= 1 ? dMonster[sx][sy - 1] : 0;
 
 	if (visiondebug && bFlag & BFLAG_LIT) {
 		CelClippedDraw(dx, dy, pSquareCel, 1, 64);
@@ -719,6 +720,692 @@ static void scrollrt_draw(int x, int y, int sx, int sy, int chunks, int row)
 		y--;
 		sx += 64;
 	}
+}
+
+void CliDrawFlask(int col, int pct, int color)
+{
+	int y = 15;
+    //    #########
+	attrset(color | A_DIM);
+	if (pct > 94)
+		mvprintw(y + 0, col + 4, "#########");
+	else if (pct > 89)
+		mvprintw(y + 0, col + 4, "_________");
+    //  ###--------##
+	if (pct > 83) {
+		mvprintw(y + 1, col + 2, "###");
+		attroff(A_DIM);
+		printw("########");
+		attron(A_DIM);
+		printw("##");
+	} else if (pct > 78) {
+		mvprintw(y + 1, col + 2, "___");
+		attroff(A_DIM);
+		printw("________");
+		attron(A_DIM);
+		printw("__");
+	}
+    // ###----------##
+	if (pct > 72) {
+		mvprintw(y + 2, col + 1, "###");
+		attroff(A_DIM);
+		printw("##########");
+		attron(A_DIM);
+		printw("##");
+	} else if (pct > 67) {
+		mvprintw(y + 2, col + 1, "___");
+		attroff(A_DIM);
+		printw("__________");
+		attron(A_DIM);
+		printw("__");
+	}
+    //###------oo----##
+	if (pct > 61) {
+		mvprintw(y + 3, col, "###");
+		attroff(A_DIM);
+		printw("######");
+		attron(A_BOLD);
+		printw("##");
+		attroff(A_BOLD);
+		printw("####");
+		attron(A_DIM);
+		printw("##");
+	} else if (pct > 56) {
+		mvprintw(y + 3, col, "___");
+		attroff(A_DIM);
+		printw("______");
+		attron(A_BOLD);
+		printw("__");
+		attroff(A_BOLD);
+		printw("____");
+		attron(A_DIM);
+		printw("__");
+	}
+    //###------------##
+	if (pct > 50) {
+		mvprintw(y + 4, col, "###");
+		attroff(A_DIM);
+		printw("############");
+		attron(A_DIM);
+		printw("##");
+	} else if (pct > 44) {
+		mvprintw(y + 4, col, "___");
+		attroff(A_DIM);
+		printw("____________");
+		attron(A_DIM);
+		printw("__");
+	}
+    //####----------###
+	if (pct > 39) {
+		mvprintw(y + 5, col, "####");
+		attroff(A_DIM);
+		printw("##########");
+		attron(A_DIM);
+		printw("###");
+	} else if (pct > 33) {
+		mvprintw(y + 5, col, "____");
+		attroff(A_DIM);
+		printw("__________");
+		attron(A_DIM);
+		printw("___");
+	}
+    // ####--------###
+	if (pct > 28) {
+		mvprintw(y + 6, col + 1, "####");
+		attroff(A_DIM);
+		printw("########");
+		attron(A_DIM);
+		printw("###");
+	} else if (pct > 22) {
+		mvprintw(y + 6, col + 1, "____");
+		attroff(A_DIM);
+		printw("________");
+		attron(A_DIM);
+		printw("___");
+	}
+    //  #############
+	if (pct > 17)
+		mvprintw(y + 7, col + 2, "#############");
+	else if (pct > 11)
+		mvprintw(y + 7, col + 2, "#############");
+    //    #########
+	if (pct > 6)
+		mvprintw(y + 8, col + 4, "#########");
+	else if (pct > 0)
+		mvprintw(y + 8, col + 4, "#########");
+}
+
+void CliDoSpriteLighting(int wx, int wy) {
+	if (lightmax == 3) {
+		if (dLight[wx][wy] >= 2) {
+			attron(A_DIM);
+		}
+	} else {
+		if (dLight[wx][wy] >= 7) {
+			attron(A_DIM);
+		}
+	}
+}
+
+bool CliIsDead()
+{
+	return plr[myplr]._pHitPoints >> 6 == 0;
+}
+
+void CliDrawDungion(int cx, int cy, int wx, int wy) {
+	if ((dFlags[wx][wy] & BFLAG_EXPLORED || leveltype == DTYPE_TOWN) && !CheckNoSolid(wx, wy)) {
+		if (CliIsDead()) {
+			attrset(CLR_RED);
+			CliDoSpriteLighting(wx, wy);
+		} else {
+			if (lightmax == 3) {
+				switch (dLight[wx][wy]) {
+				case 0:
+					attrset(CLR_BW6);
+					break;
+				case 1:
+					attrset(CLR_BW4);
+					break;
+				case 2:
+					attrset(CLR_BW2);
+					break;
+				case 3:
+					attrset(CLR_BW1);
+				}
+			} else {
+				switch (dLight[wx][wy]) {
+				case 0:
+				case 1:
+				case 2:
+					attrset(CLR_BW6);
+					break;
+				case 3:
+				case 4:
+				case 5:
+					attrset(CLR_BW5);
+					break;
+				case 6:
+				case 7:
+					attrset(CLR_BW4);
+					break;
+				case 8:
+				case 9:
+					attrset(CLR_BW3);
+					break;
+				case 10:
+				case 11:
+					attrset(CLR_BW2);
+					break;
+				case 12:
+				case 13:
+					attrset(CLR_BW1);
+					break;
+				case 14:
+				case 15:
+					attrset(CLR_BW1);
+				}
+			}
+		}
+		mvaddch(cy, cx, '#');
+	} else {
+		mvaddch(cy, cx, ' ');
+	}
+}
+
+static void CliSetMonsterColor(int i)
+{
+	attrset(CLR_RED);
+	if (CliIsDead() || !(dFlags[monster[i]._mx][monster[i]._my] & BFLAG_LIT)) {
+		attrset(CLR_RED);
+	} else {
+		switch (monster[i].MType->mtype) {
+		case MT_NZOMBIE:
+		case MT_RFALLSP:
+		case MT_RFALLSD:
+		case MT_BSCAV:
+		case MT_UNSEEN:
+		case MT_NGOATMC:
+		case MT_BGOATMC:
+		case MT_NGOATBW:
+		case MT_BGOATBW:
+		case MT_NACID:
+		case MT_NSNAKE:
+		case MT_HORNED:
+		case MT_UNRAV:
+		case MT_LTCHDMN:
+		case MT_SUCCUBUS:
+		case MT_GARGOYLE:
+			attrset(CLR_FLS);
+			break;
+		case MT_BZOMBIE:
+		case MT_DFALLSP:
+		case MT_BFALLSP:
+		case MT_DFALLSD:
+		case MT_BFALLSD:
+		case MT_WSCAV:
+		case MT_VTEXLRD:
+		case MT_BMAGMA:
+		case MT_FROSTC:
+		case MT_BTBLACK:
+		case MT_SOLBRNR:
+		case MT_SNOWWICH:
+		case MT_DEATHW:
+			attrset(CLR_BLU);
+			break;
+		case MT_GZOMBIE:
+		case MT_WSKELAX:
+		case MT_TSKELAX:
+		case MT_WSKELBW:
+		case MT_TSKELBW:
+		case MT_WSKELSD:
+		case MT_TSKELSD:
+		case MT_YSCAV:
+		case MT_GGOATMC:
+		case MT_GLOOM:
+		case MT_GGOATBW:
+		case MT_BACID:
+		case MT_SKING:
+		case MT_WMAGMA:
+		case MT_BONEDMN:
+			attrset(CLR_BW5);
+			break;
+		case MT_YZOMBIE:
+		case MT_ILLWEAV:
+		case MT_FAMILIAR:
+		case MT_TOAD:
+		case MT_BSNAKE:
+		case MT_YMAGMA:
+		case MT_MUDRUN:
+		case MT_NBLACK:
+		case MT_STORML:
+		case MT_STORM:
+		case MT_CABALIST:
+		case MT_WINGED:
+			attrset(CLR_YEL);
+			break;
+		case MT_XSKELAX:
+		case MT_XSKELBW:
+		case MT_XSKELSD:
+		case MT_INVILORD:
+		case MT_SNEAK:
+		case MT_BLINK:
+		case MT_RACID:
+		case MT_GUARD:
+		case MT_GSNAKE:
+		case MT_OBLORD:
+		case MT_RBLACK:
+		case MT_MAEL:
+		case MT_GOLEM:
+		case MT_MAGISTR:
+		case MT_ADVOCATE:
+			attrset(CLR_BW2);
+			break;
+		}
+	}
+}
+
+static void CliDrawMonsterHelper(int x, int y, int ox, int oy)
+{
+	int mi, px, py;
+	MonsterStruct *pMonster;
+
+	if (!(dFlags[x][y] & BFLAG_LIT) && !plr[myplr]._pInfraFlag)
+		return;
+
+	mi = dMonster[x][y];
+	mi = mi > 0 ? mi - 1 : -(mi + 1);
+
+	if (leveltype == DTYPE_TOWN) {
+		attrset(CLR_GRN);
+		mvaddch(towner[mi]._ty - oy, towner[mi]._tx - ox, *towner[mi]._tName);
+		return;
+	}
+
+	pMonster = &monster[mi];
+	if (pMonster->_mFlags & MFLAG_HIDDEN) {
+		return;
+	}
+
+	CliSetMonsterColor(mi);
+	CliDoSpriteLighting(pMonster->_mx, pMonster->_my);
+	mvaddch(pMonster->_my - oy, pMonster->_mx - ox, *pMonster->mName);
+}
+
+static void CliDrawPlayerHelper(int x, int y, int ox, int oy)
+{
+	int p = dPlayer[x][y];
+	p = p > 0 ? p - 1 : -(p + 1);
+	PlayerStruct *pPlayer = &plr[p];
+
+	if (dFlags[x][y] & BFLAG_LIT || plr[myplr]._pInfraFlag || !setlevel && !currlevel) {
+		attrset(CLR_GRN);
+		if (CliIsDead())
+			attrset(CLR_RED);
+		CliDoSpriteLighting(x, y);
+		if (p == myplr)
+			mvaddch(pPlayer->_py - oy, pPlayer->_px - ox, '@');
+		else
+			mvaddch(pPlayer->_py - oy, pPlayer->_px - ox, *pPlayer->_pName);
+	}
+}
+
+static void CliDrawObject(int ox, int oy, int x, int y, bool pre)
+{
+	int oi, xx, yy;
+
+	if (dObject[x][y] == 0 || dLight[x][y] >= lightmax)
+		return;
+
+	if (dObject[x][y] > 0) {
+		oi = dObject[x][y] - 1;
+		if (object[oi]._oPreFlag != pre)
+			return;
+	} else {
+		oi = -(dObject[x][y] + 1);
+		if (object[oi]._oPreFlag != pre)
+			return;
+		x = object[oi]._ox - x;
+		y = object[oi]._oy - y;
+	}
+
+	assert((unsigned char)oi < MAXOBJECTS);
+
+	if (object[oi]._oSelFlag)
+		attrset(CLR_YEL);
+	else
+		attrset(CLR_FLS);
+
+	char t = '#';
+	switch (object[oi]._otype) {
+	case OBJ_L1LIGHT:
+	case OBJ_CANDLE1:
+	case OBJ_CANDLE2:
+	case OBJ_CANDLEO:
+	case OBJ_TORCHL:
+	case OBJ_TORCHR:
+	case OBJ_TORCHL2:
+	case OBJ_TORCHR2:
+		t = 'i';
+		break;
+	case OBJ_LEVER:
+	case OBJ_FLAMELVR:
+	case OBJ_SWITCHSKL:
+		t = 'l';
+		break;
+	case OBJ_CHEST1:
+	case OBJ_TCHEST1:
+	case OBJ_BOOK2L:
+	case OBJ_BOOK2R:
+	case OBJ_CHEST2:
+	case OBJ_TCHEST2:
+	case OBJ_CHEST3:
+	case OBJ_TCHEST3:
+	case OBJ_SIGNCHEST:
+	case OBJ_BOOKSHELF:
+	case OBJ_BARREL:
+	case OBJ_BARRELEX:
+	case OBJ_SKELBOOK:
+	case OBJ_BOOKCASEL:
+	case OBJ_BOOKCASER:
+	case OBJ_BOOKSTAND:
+	case OBJ_BLINDBOOK:
+	case OBJ_BLOODBOOK:
+	case OBJ_PEDISTAL:
+	case OBJ_STEELTOME:
+	case OBJ_STORYBOOK:
+	case OBJ_SLAINHERO:
+		t = '0';
+		break;
+	case OBJ_L1LDOOR:
+	case OBJ_L2LDOOR:
+	case OBJ_L3LDOOR:
+		attrset(CLR_FLS);
+		if (object[oi]._oVar4 == 0)
+			t = '|';
+		else
+			t = '/';
+		break;
+	case OBJ_L1RDOOR:
+	case OBJ_L2RDOOR:
+	case OBJ_L3RDOOR:
+		attrset(CLR_FLS);
+		if (object[oi]._oVar4 == 0)
+			t = '-';
+		else
+			t = '\\';
+		break;
+	case OBJ_CRUX1:
+	case OBJ_CRUX2:
+	case OBJ_CRUX3:
+			t = 't';
+		break;
+	case OBJ_SHRINEL:
+	case OBJ_SHRINER:
+	case OBJ_BLOODFTN:
+	case OBJ_PURIFYINGFTN:
+	case OBJ_GOATSHRINE:
+	case OBJ_CAULDRON:
+	case OBJ_MURKYFTN:
+	case OBJ_TEARFTN:
+			t = '?';
+		break;
+	case OBJ_ARMORSTAND:
+	case OBJ_WARARMOR:
+	case OBJ_WARWEAP:
+	case OBJ_WEAPONRACK:
+	case OBJ_LAZSTAND:
+			t = 'w';
+		break;
+	case OBJ_MUSHPATCH:
+			t = 'm';
+		break;
+	}
+
+	if (CliIsDead())
+		attrset(CLR_RED);
+	if (object[oi]._oLight)
+		CliDoSpriteLighting(x, y);
+	mvaddch(oy, ox, t);
+}
+
+static void CliDrawItem(int ox, int oy, int x, int y, bool pre)
+{
+	char bItem = dItem[x][y];
+	ItemStruct *pItem;
+
+	if (bItem == 0)
+		return;
+
+	pItem = &item[bItem - 1];
+	if (pItem->_iPostDraw == pre)
+		return;
+
+	attrset(CLR_BLU);
+	if (bItem - 1 == pcursitem) {
+		attron(A_BOLD);
+	}
+	if (CliIsDead())
+		attrset(CLR_RED);
+	CliDoSpriteLighting(x, y);
+
+	char t = '#';
+	switch (pItem->_itype) {
+	case ITYPE_SWORD:
+		t = 'i';
+		break;
+	case ITYPE_AXE:
+		t = 'p';
+		break;
+	case ITYPE_BOW:
+		t = 'b';
+		break;
+	case ITYPE_MACE:
+		t = 't';
+		break;
+	case ITYPE_SHIELD:
+		t = '0';
+		break;
+	case ITYPE_HELM:
+		t = 'n';
+		break;
+	case ITYPE_STAFF:
+		t = 'l';
+		break;
+	case ITYPE_GOLD:
+		t = '$';
+		break;
+	case ITYPE_RING:
+		t = 'o';
+		break;
+	case ITYPE_AMULET:
+		t = 'y';
+		break;
+	}
+	mvaddch(oy, ox, t);
+}
+
+bool CliFindTrigger(int x, int y)
+{
+	for (int i = 0; i < numtrigs; i++) {
+		if (trigs[i]._tx == x && trigs[i]._ty == y)
+			return true;
+	}
+
+	for (int i = 0; i < MAXQUESTS; i++) {
+		if (i == QTYPE_VB || currlevel != quests[i]._qlevel || quests[i]._qslvl == 0)
+			continue;
+		if (quests[i]._qtx == x && quests[i]._qty == y)
+			return true;
+	}
+
+	return false;
+}
+
+/**
+ * @brief Configure render and process screen rows
+ * @param x Center of view in dPiece coordinate
+ * @param y Center of view in dPiece coordinate
+ */
+static void CliDrawGame()
+{
+	int x = plr[myplr]._px;
+	int y = plr[myplr]._py;
+	int width = 80;
+	int sx = 0;
+	if (invflag || sbookflag) {
+		width -= 40;
+	}
+	if (chrflag || questlog) {
+		width -= 40;
+		sx += 40;
+	}
+
+	for (int cy = 0; cy < 17; cy++) {
+		for (int cx = 0; cx < width; cx++) {
+			int ox = x - width / 2;
+			int oy = y - 17 / 2;
+			int wx = cx + ox;
+			int wy = cy + oy;
+			if (wx >= 0 && wx < MAXDUNX && wy >= 0 && wy < MAXDUNX && (dFlags[wx][wy] & BFLAG_EXPLORED || leveltype == DTYPE_TOWN)) {
+				attrset(CLR_BW0);
+				CliDrawDungion(cx + sx, cy, wx, wy);
+				CliDrawObject(cx + sx, cy, wx, wy, true);
+				CliDrawItem(cx + sx, cy, wx, wy, true);
+				if (dPlayer[wx][wy] != 0) {
+					CliDrawPlayerHelper(wx, wy, ox - sx, oy);
+				} else if (dMonster[wx][wy] != 0) {
+					CliDrawMonsterHelper(wx, wy, ox - sx, oy);
+				} else if (dFlags[wx][wy] & BFLAG_MISSILE) {
+					attrset(CLR_YEL);
+					if (CliIsDead())
+						attrset(CLR_RED);
+					CliDoSpriteLighting(wx, wy);
+					mvaddch(cy, cx + sx, '*');
+				} else if (CliFindTrigger(wx, wy)) {
+					attrset(CLR_YEL);
+					mvaddch(cy, cx + sx, '#');
+				}
+				CliDrawObject(cx + sx, cy, wx, wy, false);
+				CliDrawItem(cx + sx, cy, wx, wy, false);
+			} else {
+				attrset(CLR_BW0);
+				mvaddch(cy, cx + sx, ' ');
+			}
+		}
+	}
+}
+
+void CliDrawFrame(int x, int y, int w, int h)
+{
+	attrset(CLR_FLS);
+	mvaddch(y, x, '+');
+	mvaddch(y, x + w - 1, '+');
+	mvaddch(y + h - 1, x, '+');
+	mvaddch(y + h - 1, x + w - 1, '+');
+	mvhline(y, x + 1, '-', w - 2);
+	mvhline(y + h - 1, x + 1, '-', w - 2);
+	mvvline(y + 1, x, '|', h - 2);
+	mvvline(y + 1, x + w - 1, '|', h - 2);
+}
+
+void CliDrawBox(int color, int x, int y, int w, int h, char c = '#')
+{
+	attrset(color);
+	for (int cy = y; cy < y + h; cy++)
+		mvhline(cy, x, c, w);
+}
+
+static void CliDrawPanel()
+{
+	attrset(CLR_FLS | A_DIM | A_BOLD);
+	mvhline(17, 0, '_', 80);
+
+	attrset(CLR_FLS | A_DIM | A_BOLD);
+	if (setlevel)
+		mvprintw(17, 27, quest_level_names[(BYTE)setlvlnum]);
+	else if (currlevel) {
+		char desc[256];
+		sprintf(desc, "Level: %i", currlevel);
+		mvprintw(17, 27, desc);
+	}
+
+	// Clear panel
+	CliDrawBox(CLR_BW5, 0, 18, 80, 6);
+
+	for (int i = 0; i < MAXBELTITEMS; i++) {
+		if (plr[myplr].SpdList[i]._itype == ITYPE_NONE) {
+			attrset(CLR_BW2);
+			mvaddch(18, 29 + (3 * i), '#');
+			continue;
+		}
+		attrset(CLR_GRN);
+		if (pcursinvitem == i + INVITEM_BELT_FIRST)
+			attron(A_BOLD);
+		switch (AllItemsList[plr[myplr].SpdList[i].IDidx].iMiscId) {
+			case IMISC_HEAL:
+				attron(CLR_RED);
+				mvaddch(18, 29 + (3 * i), 'o');
+				break;
+			case IMISC_FULLHEAL:
+				attron(CLR_RED);
+				mvaddch(18, 29 + (3 * i), 'O');
+				break;
+			case IMISC_SCROLL:
+				attron(CLR_FLS);
+				mvaddch(18, 29 + (3 * i), 'I');
+				break;
+			case IMISC_MANA:
+				attron(CLR_BLU);
+				mvaddch(18, 29 + (3 * i), 'o');
+				break;
+			case IMISC_FULLMANA:
+				attron(CLR_BLU);
+				mvaddch(18, 29 + (3 * i), 'O');
+				break;
+			case IMISC_REJUV:
+				attron(CLR_YEL);
+				mvaddch(18, 29 + (3 * i), 'o');
+				break;
+			case IMISC_FULLREJUV:
+				attron(CLR_YEL);
+				mvaddch(18, 29 + (3 * i), 'O');
+				break;
+			default:
+				mvaddch(18, 29 + (3 * i), '#');
+				break;
+		}
+	}
+
+	attrset(CLR_BW6 | A_UNDERLINE | A_BOLD | A_REVERSE);
+	if (plr[myplr]._pStatPts)
+		attron(CLR_RED);
+	mvprintw(18, 1, "C");
+	attroff(A_UNDERLINE | A_BOLD);
+	printw("har");
+	attron(CLR_BW6);
+	attron(A_UNDERLINE | A_BOLD);
+	mvprintw(19, 1, "Q");
+	attroff(A_UNDERLINE | A_BOLD);
+	printw("uest");
+	attron(A_UNDERLINE | A_BOLD);
+	mvprintw(21, 1, "M");
+	attroff(A_UNDERLINE | A_BOLD);
+	printw("enu");
+	attroff(CLR_BW6);
+
+	CliDrawFlask(8, 100 * plr[myplr]._pHitPoints / plr[myplr]._pMaxHP, CLR_RED);
+	CliDrawBox(CLR_BW0, 26, 19, 28, 5, ' ');
+	CliDrawFlask(55, 100 * plr[myplr]._pMana / plr[myplr]._pMaxMana, CLR_BLU);
+
+	attrset(CLR_BW6 | A_UNDERLINE | A_BOLD | A_REVERSE);
+	mvprintw(18, 73, "I");
+	attroff(A_UNDERLINE | A_BOLD);
+	printw("nv");
+	attron(A_UNDERLINE | A_BOLD);
+	mvprintw(19, 73, "S");
+	attroff(A_UNDERLINE | A_BOLD);
+	printw("pells");
+	attroff(CLR_BW6);
 }
 
 /**
@@ -872,6 +1559,288 @@ static void DrawGame(int x, int y)
 	}
 }
 
+int CliItemColor(ItemStruct *i, int id)
+{
+	int color = CLR_BW1;
+	if (i->_itype != ITYPE_NONE) {
+		color = CLR_BW5;
+		if (i->_iMagical != ITEM_QUALITY_NORMAL)
+			color = CLR_BLU;
+		if (!i->_iStatFlag)
+			color = CLR_RED;
+		if (pcursinvitem == id) {
+			color |= A_BOLD;
+		}
+	}
+
+	return color;
+}
+
+void CliDrawInv()
+{
+	int x = 40;
+	int color;
+	CliDrawFrame(x, 0, 40, 17);
+	CliDrawBox(CLR_BW4, x + 1, 1, 38, 7);
+
+	// check which inventory rectangle the mouse is in, if any
+	int slot = 25;
+	for (int r = 0; (DWORD)r < NUM_XY_SLOTS; r++) {
+		if (MouseX >= InvRect[r].X && MouseX < InvRect[r].X + (INV_SLOT_SIZE_PX + 1) && MouseY >= InvRect[r].Y - (INV_SLOT_SIZE_PX + 1) && MouseY < InvRect[r].Y) {
+			slot = r;
+			break;
+		}
+	}
+	char tmpstring[32];
+	sprintf(tmpstring, "slot %d", slot);
+	mvprintw(2, 2, tmpstring);
+
+	color = CliItemColor(&plr[myplr].InvBody[INVLOC_HAND_LEFT], INVLOC_HAND_LEFT);
+	CliDrawBox(color, x + 2, 1, 4, 6); // right hand
+	color = CliItemColor(&plr[myplr].InvBody[INVLOC_RING_LEFT], INVLOC_RING_LEFT);
+	CliDrawBox(color, x + 7, 5, 2, 2); // right ring
+
+
+	color = CliItemColor(&plr[myplr].InvBody[INVLOC_HEAD], INVLOC_HEAD);
+	CliDrawBox(color, x + 14, 1, 4, 4); // head
+	color = CliItemColor(&plr[myplr].InvBody[INVLOC_CHEST], INVLOC_CHEST);
+	CliDrawBox(color, x + 19, 1, 4, 6); // torso
+	color = CliItemColor(&plr[myplr].InvBody[INVLOC_AMULET], INVLOC_AMULET);
+	CliDrawBox(color, x + 24, 1, 2, 2); // amulet
+
+	color = CliItemColor(&plr[myplr].InvBody[INVLOC_RING_RIGHT], INVLOC_RING_RIGHT);
+	CliDrawBox(color, x + 31, 5, 2, 2); // left ring
+	if (plr[myplr].InvBody[INVLOC_HAND_LEFT]._itype != ITYPE_NONE && plr[myplr].InvBody[INVLOC_HAND_LEFT]._iLoc == ILOC_TWOHAND)
+		color = CliItemColor(&plr[myplr].InvBody[INVLOC_HAND_LEFT], INVLOC_HAND_LEFT) | A_DIM;
+	else
+		color = CliItemColor(&plr[myplr].InvBody[INVLOC_HAND_RIGHT], INVLOC_HAND_RIGHT);
+	CliDrawBox(color, x + 34, 1, 4, 6); // left hand
+
+	attrset(CLR_FLS);
+	mvhline(7, x + 1, '-', 40 - 2);
+	CliDrawBox(CLR_BW4, x + 1, 8, 38, 8);
+	CliDrawBox(CLR_BW1, x + 10, 8, 20, 8);
+
+	if (slot >= 25) {
+		CliDrawBox(CLR_BW2, x + 10 + ((slot - 25) % 10 * 2), 8 + ((slot - 25) / 10 * 2), 2, 2);
+	}
+
+	for (int j = 0; j < NUM_INV_GRID_ELEM; j++) {
+		if (plr[myplr].InvGrid[j] > 0) {
+			int ii = plr[myplr].InvGrid[j] - 1;
+			color = CliItemColor(&plr[myplr].InvList[ii], ii + INVITEM_INV_FIRST);
+			int ci = plr[myplr].InvList[ii]._iCurs + CURSOR_FIRSTITEM;
+			int iw = InvItemWidth[ci] / 28 * 2;
+			int ih = InvItemHeight[ci] / 28 * 2;
+			CliDrawBox(color, x + 10 + (j % 10 * 2), 8 + (j / 10 * 2) - ih + 2, iw, ih);
+		}
+	}
+}
+
+void CliDrawSpellBook()
+{
+	int x = 40;
+	CliDrawFrame(40, 0, 40, 17);
+	CliDrawBox(CLR_BW5, x + 1, 1, 38, 15);
+}
+
+void CliPaddedPrint(int x, int y, int padding, int n)
+{
+	char tmpstring[40];
+	sprintf(tmpstring, "%*d", padding, n);
+	mvprintw(y, x, tmpstring);
+}
+
+void CliStatColor(int current, int base)
+{
+	if (current > base)
+		attrset(CLR_BLU);
+	else if (current < base)
+		attrset(CLR_RED);
+	else
+		attrset(CLR_BW6);
+}
+
+void CliDrawChr()
+{
+	CliDrawFrame(0, 0, 40, 17);
+	CliDrawBox(CLR_BW0, 1, 1, 38, 15);
+	attrset(CLR_BW6);
+	mvprintw(1, 2, plr[myplr]._pName);
+	mvprintw(1, 17, ClassStrTbl[plr[myplr]._pClass]);
+
+	mvprintw(2, 2, "Level");
+	CliPaddedPrint(8, 2, 2, plr[myplr]._pLevel);
+
+	mvprintw(2, 17, "Experience");
+	CliPaddedPrint(28, 2, 10, plr[myplr]._pExperience);
+
+	mvprintw(3, 17, "Next level");
+	if (plr[myplr]._pLevel == MAXCHARLEVEL - 1) {
+		attrset(CLR_FLS);
+		mvprintw(3, 31, "None");
+	} else {
+		CliPaddedPrint(28, 3, 10, plr[myplr]._pNextExper);
+	}
+
+	attrset(CLR_BW6);
+	mvprintw(5, 17, "Gold");
+	CliPaddedPrint(32, 5, 6, plr[myplr]._pGold);
+
+	mvprintw(5, 6, "Base");
+	mvprintw(5, 11, "Now");
+
+	mvprintw(6, 2, "Str");
+	if (MaxStats[plr[myplr]._pClass][ATTRIB_STR] == plr[myplr]._pBaseStr)
+		attrset(CLR_FLS);
+	CliPaddedPrint(7, 6, 3, plr[myplr]._pBaseStr);
+	CliStatColor(plr[myplr]._pStrength, plr[myplr]._pBaseStr);
+	CliPaddedPrint(11, 6, 3, plr[myplr]._pStrength);
+
+	attrset(CLR_BW6);
+	mvprintw(7, 2, "Mag");
+	if (MaxStats[plr[myplr]._pClass][ATTRIB_MAG] == plr[myplr]._pBaseMag)
+		attrset(CLR_FLS);
+	CliPaddedPrint(7, 7, 3, plr[myplr]._pBaseMag);
+	CliStatColor(plr[myplr]._pMagic, plr[myplr]._pBaseMag);
+	CliPaddedPrint(11, 7, 3, plr[myplr]._pMagic);
+
+	attrset(CLR_BW6);
+	mvprintw(8, 2, "Dex");
+	if (MaxStats[plr[myplr]._pClass][ATTRIB_DEX] == plr[myplr]._pBaseDex)
+		attrset(CLR_FLS);
+	CliPaddedPrint(7, 8, 3, plr[myplr]._pBaseDex);
+	CliStatColor(plr[myplr]._pDexterity, plr[myplr]._pBaseDex);
+	CliPaddedPrint(11, 8, 3, plr[myplr]._pDexterity);
+
+	attrset(CLR_BW6);
+	mvprintw(9, 2, "Vit");
+	if (MaxStats[plr[myplr]._pClass][ATTRIB_VIT] == plr[myplr]._pBaseVit)
+		attrset(CLR_FLS);
+	CliPaddedPrint(7, 9, 3, plr[myplr]._pBaseVit);
+	CliStatColor(plr[myplr]._pVitality, plr[myplr]._pBaseVit);
+	CliPaddedPrint(11, 9, 3, plr[myplr]._pVitality);
+
+	attrset(CLR_BW6);
+	mvprintw(10, 2, "Pts");
+	if (plr[myplr]._pStatPts) {
+		CliPaddedPrint(7, 10, 3, plr[myplr]._pStatPts);
+
+		int slot = 0;
+		for (int i = 0; i < 4; i++) {
+			if (MouseX >= ChrBtnsRect[i].x
+				&& MouseX <= ChrBtnsRect[i].x + ChrBtnsRect[i].w
+				&& MouseY >= ChrBtnsRect[i].y
+				&& MouseY <= ChrBtnsRect[i].h + ChrBtnsRect[i].y) {
+				slot = i;
+				break;
+			}
+		}
+		attrset(CLR_BN1);
+		mvprintw(6 + slot, 11, " + ");
+	}
+
+	attrset(CLR_BW6);
+	mvprintw(12, 2, "Life");
+	CliStatColor(plr[myplr]._pMaxHP, plr[myplr]._pMaxHPBase);
+	CliPaddedPrint(7, 12, 3, plr[myplr]._pMaxHP >> 6);
+	if (plr[myplr]._pHitPoints < plr[myplr]._pMaxHP)
+		attrset(CLR_RED);
+	CliPaddedPrint(11, 12, 3, plr[myplr]._pHitPoints >> 6);
+
+	attrset(CLR_BW6);
+	mvprintw(13, 2, "Mana");
+	CliStatColor(plr[myplr]._pMaxMana, plr[myplr]._pMaxManaBase);
+	CliPaddedPrint(7, 13, 3, plr[myplr]._pMaxMana >> 6);
+	if (plr[myplr]._pMana < plr[myplr]._pMaxMana)
+		attrset(CLR_RED);
+	CliPaddedPrint(11, 13, 3, plr[myplr]._pMana >> 6);
+
+	attrset(CLR_BW6);
+	mvprintw(7, 17, "AC");
+	CliStatColor(plr[myplr]._pIBonusAC, 0);
+	CliPaddedPrint(35, 7, 3, plr[myplr]._pIBonusAC + plr[myplr]._pIAC + plr[myplr]._pDexterity / 5);
+
+	attrset(CLR_BW6);
+	mvprintw(8, 17, "To hit");
+	CliStatColor(plr[myplr]._pIBonusToHit, 0);
+	CliPaddedPrint(34, 8, 3, (plr[myplr]._pDexterity >> 1) + plr[myplr]._pIBonusToHit + 50);
+	mvprintw(8, 37, "%%");
+
+	attrset(CLR_BW6);
+	mvprintw(9, 17, "Dam");
+	CliStatColor(plr[myplr]._pIBonusDam, 0);
+	int mindam = plr[myplr]._pIMinDam;
+	mindam += plr[myplr]._pIBonusDam * mindam / 100;
+	mindam += plr[myplr]._pIBonusDamMod;
+	if (plr[myplr].InvBody[INVLOC_HAND_LEFT]._itype == ITYPE_BOW) {
+		if (plr[myplr]._pClass == PC_ROGUE)
+			mindam += plr[myplr]._pDamageMod;
+		else
+			mindam += plr[myplr]._pDamageMod >> 1;
+	} else {
+		mindam += plr[myplr]._pDamageMod;
+	}
+	int maxdam = plr[myplr]._pIMaxDam;
+	maxdam += plr[myplr]._pIBonusDam * maxdam / 100;
+	maxdam += plr[myplr]._pIBonusDamMod;
+	if (plr[myplr].InvBody[INVLOC_HAND_LEFT]._itype == ITYPE_BOW) {
+		if (plr[myplr]._pClass == PC_ROGUE)
+			maxdam += plr[myplr]._pDamageMod;
+		else
+			maxdam += plr[myplr]._pDamageMod >> 1;
+	} else {
+		maxdam += plr[myplr]._pDamageMod;
+	}
+	char chrstr[40];
+	char chrstr2[40];
+	sprintf(chrstr, "%i-%i", mindam, maxdam);
+	sprintf(chrstr2, "%*s", 9, chrstr);
+	mvprintw(9, 29, chrstr2);
+
+	attrset(CLR_BW6);
+	mvprintw(11, 17, "Resist magic");
+	if (plr[myplr]._pMagResist < 75) {
+		if (plr[myplr]._pMagResist)
+			attrset(CLR_BLU);
+		CliPaddedPrint(35, 11, 2, plr[myplr]._pMagResist);
+		mvprintw(11, 37, "%%");
+	} else {
+		attrset(CLR_FLS);
+		mvprintw(11, 35, "MAX");
+	}
+
+	attrset(CLR_BW6);
+	mvprintw(12, 17, "Resist fire");
+	if (plr[myplr]._pFireResist < 75) {
+		if (plr[myplr]._pFireResist)
+			attrset(CLR_BLU);
+		CliPaddedPrint(35, 12, 2, plr[myplr]._pFireResist);
+		mvprintw(12, 37, "%%");
+	} else {
+		attrset(CLR_FLS);
+		mvprintw(12, 35, "MAX");
+	}
+
+	attrset(CLR_BW6);
+	mvprintw(13, 17, "Resist lightning");
+	if (plr[myplr]._pLghtResist < 75) {
+		if (plr[myplr]._pLghtResist)
+			attrset(CLR_BLU);
+		CliPaddedPrint(35, 13, 2, plr[myplr]._pLghtResist);
+		mvprintw(13, 37, "%%");
+	} else {
+		attrset(CLR_FLS);
+		mvprintw(13, 35, "MAX");
+	}
+}
+
+void CliDrawQuestLog()
+{
+	CliDrawFrame(0, 0, 40, 17);
+	CliDrawBox(CLR_BW5, 1, 1, 38, 15);
+}
+
 /**
  * @brief Start rendering of screen, town variation
  * @param StartX Center of view in dPiece coordinate
@@ -880,24 +1849,33 @@ static void DrawGame(int x, int y)
 void DrawView(int StartX, int StartY)
 {
 	DrawGame(StartX, StartY);
+	CliDrawGame();
 	if (automapflag) {
 		DrawAutomap();
 	}
+
 	if (stextflag && !qtextflag)
 		DrawSText();
 	if (invflag) {
 		DrawInv();
+		CliDrawInv();
 	} else if (sbookflag) {
 		DrawSpellBook();
+		CliDrawSpellBook();
 	}
 
 	DrawDurIcon();
 
 	if (chrflag) {
 		DrawChr();
+		CliDrawChr();
 	} else if (questlog) {
 		DrawQuestLog();
+		CliDrawQuestLog();
 	}
+
+	CliDrawPanel();
+
 	if (!chrflag && plr[myplr]._pStatPts != 0 && !spselflag
 		&& (!questlog || SCREEN_HEIGHT >= SPANEL_HEIGHT + PANEL_HEIGHT + 74 || SCREEN_WIDTH >= 4 * SPANEL_WIDTH)) {
 		DrawLevelUpIcon();

@@ -4,6 +4,7 @@
 #include "utf8.h"
 #include <string>
 #include <algorithm>
+#include <ncurses.h>
 
 #include "controls/menu_controls.h"
 
@@ -623,6 +624,7 @@ void Render(UiText *ui_text)
 
 void Render(const UiArtText &ui_art_text)
 {
+	attrset(CLR_BW6);
 	DrawArtStr(ui_art_text.text, ui_art_text.rect, ui_art_text.flags);
 }
 
@@ -642,6 +644,7 @@ void Render(const UiImage &ui_image)
 
 void Render(const UiArtTextButton &ui_button)
 {
+	attrset(CLR_BW6);
 	DrawArtStr(ui_button.text, ui_button.rect, ui_button.flags);
 }
 
@@ -650,8 +653,11 @@ void Render(const UiList &ui_list)
 	for (std::size_t i = 0; i < ui_list.length; ++i) {
 		SDL_Rect rect = ui_list.itemRect(i);
 		const auto &item = ui_list.items[i];
-		if (item.value == SelectedItem)
+		attrset(CLR_BW6);
+		if (item.value == SelectedItem) {
 			DrawSelector(rect);
+			attrset(CLR_RED);
+		}
 		DrawArtStr(item.text, rect, ui_list.flags);
 	}
 }
@@ -696,6 +702,7 @@ void Render(const UiEdit &ui_edit)
 	rect.x += 43;
 	rect.y += 1;
 	rect.w -= 86;
+	attrset(CLR_BW6);
 	DrawArtStr(ui_edit.value, rect, ui_edit.flags, /*drawTextCursor=*/true);
 }
 
@@ -823,6 +830,9 @@ void LoadPalInMem(const PALETTEENTRY *pPal)
 
 void UiRenderItems(UiItem *items, std::size_t size)
 {
+	attrset(CLR_BW0);
+	for (int y = 0; y < 24; y++)
+		mvhline(y, 0, ' ', 80);
 	for (std::size_t i = 0; i < size; i++)
 		RenderItem(&items[i]);
 }

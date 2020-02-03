@@ -113,6 +113,8 @@ set(CMAKE_THREAD_PREFER_PTHREAD ON)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 find_package(Threads REQUIRED)
+find_package(Curses REQUIRED)
+include_directories(${CURSES_INCLUDE_DIR})
 if(NOT NONET)
   find_package(sodium REQUIRED)
 endif()
@@ -424,6 +426,7 @@ foreach(target devilution ${BIN_TARGET})
       -lfreetype -lvorbisfile -lvorbis -logg -lmodplug -lmpg123 -lSDL2 -lopusfile -lopus -lEGL -lglapi -ldrm_nouveau -lpng -lbz2 -lz -lnx)
   endif()
 
+  target_link_libraries(${target} PUBLIC ${CURSES_LIBRARIES})
   target_compile_definitions(${target} PRIVATE ${def_list})
 endforeach(target)
 

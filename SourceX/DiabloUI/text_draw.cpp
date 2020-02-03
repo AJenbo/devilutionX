@@ -5,6 +5,7 @@
 #include "DiabloUI/text.h"
 #include "DiabloUI/ui_item.h"
 #include "DiabloUI/ttf_render_wrapped.h"
+#include <ncurses.h>
 
 namespace dvl {
 
@@ -81,6 +82,8 @@ void DrawArtStr(const char *text, const SDL_Rect &rect, int flags, bool drawText
 
 	const int x = rect.x + AlignXOffset(flags, rect, GetArtStrWidth(text, size));
 	const int y = rect.y + ((flags & UIS_VCENTER) ? (rect.h - ArtFonts[size][color].h()) / 2 : 0);
+
+	mvprintw(y * 24 / 480, x * 80 / 640, text);
 
 	int sx = x, sy = y;
 	for (size_t i = 0, n = strlen(text); i < n; i++) {

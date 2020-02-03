@@ -2,6 +2,7 @@
 #include "../3rdParty/Storm/Source/storm.h"
 #include "../DiabloUI/diabloui.h"
 #include <config.h>
+#include <ncurses.h>
 
 DEVILUTION_BEGIN_NAMESPACE
 
@@ -250,9 +251,47 @@ void free_game()
 	FreeGameMem();
 }
 
+void *Log(void *userdata, int category, SDL_LogPriority priority, const char *message)
+{
+	return NULL;
+}
+
 void diablo_init()
 {
 	init_create_window();
+
+	SDL_LogSetOutputFunction(&Log, NULL);
+
+	initscr();
+	start_color();
+	atexit(endwin);
+	raw();
+	keypad(stdscr, TRUE);
+	noecho();
+
+	init_color(COLOR_BLACK,   0,   0,   0); // black
+	init_color(COLOR_CYAN,  376, 376, 376); // mid grays
+	init_color(COLOR_WHITE, 753, 753, 753); // whites
+
+	init_color(COLOR_YELLOW, 565, 565, 0);    // yellow
+	init_color(COLOR_MAGENTA, 565, 424, 239); // flesh
+
+	init_color(COLOR_RED, 565, 0, 0);      // red
+	init_color(COLOR_GREEN, 166, 565, 74); // green
+	init_color(COLOR_BLUE, 0, 0, 565);     // blue
+
+	init_pair(1, COLOR_BLACK, COLOR_BLACK); // black
+	init_pair(2, COLOR_CYAN,  COLOR_BLACK); // mid grays
+	init_pair(3, COLOR_WHITE, COLOR_BLACK); // whites
+
+	init_pair(4, COLOR_YELLOW,  COLOR_BLACK); // yellow
+	init_pair(5, COLOR_MAGENTA, COLOR_BLACK); // flesh
+
+	init_pair(6, COLOR_RED,     COLOR_BLACK); // red
+	init_pair(7, COLOR_GREEN,   COLOR_BLACK); // green
+	init_pair(8, COLOR_BLUE,    COLOR_BLACK); // blue
+
+	init_pair(9, COLOR_YELLOW,    COLOR_RED); // lvl button
 
 	SFileEnableDirectAccess(TRUE);
 	init_archives();

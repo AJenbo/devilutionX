@@ -8,7 +8,7 @@
 
 #define UNIMPLEMENTED()                                                           \
 	do {                                                                          \
-		eprintf("UNIMPLEMENTED: %s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__); \
+		SDL_Log("UNIMPLEMENTED: %s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__); \
 		abort();                                                                  \
 	} while (0)
 
@@ -20,11 +20,11 @@
 
 #define ABORT()                                                           \
 	do {                                                                  \
-		eprintf("ABORT: %s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__); \
+		SDL_Log("ABORT: %s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__); \
 		abort();                                                          \
 	} while (0)
 
-#define DUMMY() eprintf("DUMMY: %s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
+#define DUMMY() SDL_Log("DUMMY: %s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
 
 #define DUMMY_ONCE()                     \
 	do {                                 \
@@ -35,7 +35,7 @@
 		}                                \
 	} while (0)
 
-#define DUMMY_PRINT(fmt, ...) eprintf("DUMMY: %s : " fmt "\n", __FUNCTION__, ##__VA_ARGS__)
+#define DUMMY_PRINT(fmt, ...) SDL_Log("DUMMY: %s : " fmt "\n", __FUNCTION__, ##__VA_ARGS__)
 
 static inline const char *nullstr(const char *a)
 {

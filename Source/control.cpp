@@ -1,4 +1,5 @@
 #include "diablo.h"
+#include <ncurses.h>
 
 DEVILUTION_BEGIN_NAMESPACE
 
@@ -1227,6 +1228,48 @@ void control_draw_info_str()
 	int yo, lo, i;
 
 	if (!talkflag) {
+		switch (infoclr) {
+		case COL_WHITE:
+			attrset(CLR_BW6 | A_BOLD);
+			break;
+		case COL_BLUE:
+			attrset(CLR_BLU | A_BOLD);
+			break;
+		case COL_RED:
+			attrset(CLR_RED | A_DIM | A_BOLD);
+			break;
+		default:
+			attrset(CLR_FLS | A_DIM | A_BOLD);
+			break;
+		}
+
+		int infoLines = pnumlines;
+		if (infostr[0])
+			infoLines++;
+		switch (infoLines) {
+			case 1:
+				mvprintw(21, 26 + (28 - strlen(infostr)) / 2, infostr);
+				break;
+			case 2:
+				mvprintw(20, 26 + (28 - strlen(infostr)) / 2, infostr);
+				mvprintw(21, 26 + (28 - strlen(panelstr[0])) / 2, panelstr[0]);
+				break;
+			case 3:
+				mvprintw(19, 26 + (28 - strlen(infostr)) / 2, infostr);
+				mvprintw(21, 26 + (28 - strlen(panelstr[0])) / 2, panelstr[0]);
+				mvprintw(23, 26 + (28 - strlen(panelstr[1])) / 2, panelstr[1]);
+				break;
+			case 5:
+				mvprintw(23, 26 + (28 - strlen(panelstr[3])) / 2, panelstr[3]);
+			case 4:
+				mvprintw(19, 26 + (28 - strlen(infostr)) / 2, infostr);
+				mvprintw(20, 26 + (28 - strlen(panelstr[0])) / 2, panelstr[0]);
+				mvprintw(21, 26 + (28 - strlen(panelstr[1])) / 2, panelstr[1]);
+				mvprintw(22, 26 + (28 - strlen(panelstr[2])) / 2, panelstr[2]);
+				break;
+		}
+
+
 		yo = 0;
 		lo = 1;
 		if (infostr[0]) {
