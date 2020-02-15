@@ -1,6 +1,6 @@
 ## Diablo rougle like text render
 
-https://twitter.com/i/timeline
+https://twitter.com/AJenbo/status/1227032291505065984
 
 <a href="https://www.youtube.com/watch?feature=player_embedded&v=3p9j7j2SVOA
 " target="_blank"><img src="http://img.youtube.com/vi/3p9j7j2SVOA/0.jpg"
